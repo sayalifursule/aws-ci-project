@@ -1,4 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luxury Tic Tac Toe</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0f2027, #2c5364);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+}
+
+h1 {
+    margin-top: 20px;
+    font-size: 40px;
+}
+
+.container {
+    backdrop-filter: blur(20px);
+    background: rgba(255,255,255,0.1);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    margin-top: 30px;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(3, 110px);
+    gap: 15px;
+}
+
+.cell {
+    width: 110px;
+    height: 110px;
+    font-size: 40px;
+    font-weight: bold;
+    border-radius: 15px;
+    border: none;
+    cursor: pointer;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    transition: 0.3s;
+}
+
+.cell:hover {
+    transform: scale(1.08);
+}
+
+.winner {
+    background: #00ffcc !important;
+    color: black;
+}
+
+.status {
+    margin-top: 20px;
+    font-size: 20px;
+}
+
+.btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn:hover {
+    transform: scale(1.1);
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎮 Tic Tac Toe</h1>
+
+<div class="container">
+    <div class="board" id="board"></div>
+
+    <div class="status" id="status">Player X Turn</div>
+
+    <button class="btn" onclick="resetGame()">Restart</button>
+</div>
+
+<!-- Sounds -->
+<audio id="clickSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+<audio id="winSound" src="https://www.soundjay.com/human/applause-8.wav"></audio>
+
+<script>
+let board = ["","","","","","","","",""];
+
+// Render board
+function renderBoard() {
+    const boardDiv = document.getElementById("board");
+    boardDiv.innerHTML = "";
+
+    board.forEach((cell, index) => {
+        const btn = document.createElement("button");
+        btn.classList.add("cell");
+        btn.innerText = cell;
+
+        btn.onclick = () => makeMove(index);
+
+        boardDiv.appendChild(btn);
+    });
+}
+
+// Make move (API call to Flask)
 function makeMove(index) {
+    if(board[index] !== "") return;
+
+    document.getElementById("clickSound").play();
+
     fetch('/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -11,6 +132,49 @@ function makeMove(index) {
 
         if(data.winner){
             document.getElementById("status").innerText = `🎉 ${data.winner} Wins!`;
+            document.getElementById("winSound").play();
+            highlightWinner();
+        } else {
+            document.getElementById("status").innerText = "Next Turn...";
         }
     });
 }
+
+// Highlight winning cells
+function highlightWinner() {
+    const cells = document.querySelectorAll(".cell");
+
+    const patterns = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+    ];
+
+    patterns.forEach(pattern => {
+        const [a,b,c] = pattern;
+        if(board[a] && board[a] === board[b] && board[a] === board[c]) {
+            cells[a].classList.add("winner");
+            cells[b].classList.add("winner");
+            cells[c].classList.add("winner");
+        }
+    });
+}
+
+// Reset game
+function resetGame() {
+    fetch('/reset', {
+        method: 'POST'
+    })
+    .then(() => {
+        board = ["","","","","","","","",""];
+        renderBoard();
+        document.getElementById("status").innerText = "Player X Turn";
+    });
+}
+
+// Initial render
+renderBoard();
+</script>
+
+</body>
+</html>
